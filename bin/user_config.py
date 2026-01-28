@@ -1090,6 +1090,12 @@ class UserConfig(QMainWindow):
                 version = self.setup_model.index(row, 1).data()
                 flow = self.setup_model.index(row, 2).data()
                 del self.task_setting[block][version][flow]
+
+
+                for task in self.task_setting[block][version][flow]:
+                    if task in self.dependency_priority[block][version]:
+                        del self.dependency_priority[block][version][task]
+                
         if item == 'task':
             for row in selected_rows[3]:
                 block = self.setup_model.index(row, 0).data()
@@ -3183,11 +3189,18 @@ class WindowForDependency(QMainWindow):
                 flow_chart_dic, node_list, edge_list = WindowForDependency.gen_dependency_chart_info(block=block, version=version, dependency_dic=version_dependency_dic)
                 full_chart_dic[block][version] = flow_chart_dic
                 node_dic = {node['id']: node for node in node_list}
-                node_level_dic = WindowForDependency.gen_node_level(flow_chart_dic)
+                task_set = set(task_list)
 
-                for node, r_level in node_level_dic.items():
-                    if max(node_level_dic.values()) == r_level:
-                        edge_list.append({'from': f'{block}-{version}', 'to': f'{block}-{version}-{node}', 'length': 100})
+                in_degree = {t: 0 for t in task_set}
+                for u, vs in flow_chart_dic.items():
+                    for v in vs:
+                        if v in task_set:
+                            in_degree[v] += 1
+
+                root_tasks = [t for t, deg in in_degree.items() if deg == 0]
+
+                for t in root_tasks:
+                    edge_list.append({'from': f'{block}-{version}', 'to': f'{block}-{version}-{t}', 'length': 100})
 
                 full_node_list += [node for node_id, node in node_dic.items()]
                 full_edge_list += edge_list
