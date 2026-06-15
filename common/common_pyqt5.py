@@ -1,4 +1,3 @@
-import math
 import os
 import re
 import signal
@@ -51,36 +50,41 @@ def center_window(window):
     Move the input GUI window into the center of the computer windows.
     """
     qr = window.frameGeometry()
-    cp = QDesktopWidget().availableGeometry().center()
+    available_geometry = QDesktopWidget().availableGeometry()
+    cp = available_geometry.center()
     qr.moveCenter(cp)
-    window.move(qr.topLeft())
+    top_left = qr.topLeft()
+    top_left.setX(max(available_geometry.left(), top_left.x()))
+    top_left.setY(max(available_geometry.top(), top_left.y()))
+    window.move(top_left)
 
 
-def auto_resize(window, width=0, height=0):
+def auto_resize(window, width=0, height=0, margin=80):
     """
     Scaling down the window size if screen resolution is smaller than window resolution.
     input:  Window: Original window; Width: window width; Height: window height
     output: Window: Scaled window
     """
-    # Get default width/height setting.
-    monitor = get_monitors()[0]
+    # Prefer Qt's available geometry because it accounts for panels/task bars.
+    available_geometry = QDesktopWidget().availableGeometry()
+    available_width = max(1, available_geometry.width() - margin)
+    available_height = max(1, available_geometry.height() - margin)
 
     if not width:
-        width = monitor.width
+        width = available_width
 
     if not height:
-        height = monitor.height
+        height = available_height
 
-    # If the screen size is too small, automatically obtain the appropriate length and width value.
-    if (monitor.width < width) or (monitor.height < height):
-        width_rate = math.floor((monitor.width / width) * 100)
-        height_rate = math.floor((monitor.height / height) * 100)
-        min_rate = min(width_rate, height_rate)
-        width = int((width * min_rate) / 100)
-        height = int((height * min_rate) / 100)
+    # If the available desktop is too small, scale the window while preserving aspect ratio.
+    if (available_width < width) or (available_height < height):
+        resize_rate = min(available_width / width, available_height / height)
+        width = int(width * resize_rate)
+        height = int(height * resize_rate)
 
     # Resize with auto width/height value.
-    window.resize(width, height)
+    window.setMinimumSize(1, 1)
+    window.resize(max(1, width), max(1, height))
 
 
 def text_edit_visible_position(text_edit_item, position='End'):
