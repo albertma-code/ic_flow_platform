@@ -37,8 +37,6 @@ from PyQt5.QtGui import QIcon, QBrush, QColor, QFont, QStandardItem, QStandardIt
 
 # Import local python files.
 import parse_config
-from user_config import UserConfig, WindowForDependency, WindowForToolGlobalEnvEditor, WindowForAPI, WindowForTaskInformation, TaskJobCheckWorker
-from job_manager import JobManager
 
 # Import common python files.
 sys.path.append(str(os.environ['IFP_INSTALL_PATH']) + '/common')
@@ -243,6 +241,17 @@ class MainWindow(QMainWindow):
         self.record_count = 0
 
         with common_pyqt5.WaitingWindow('Loading IFP ...'):
+            global UserConfig
+            global WindowForDependency
+            global WindowForToolGlobalEnvEditor
+            global WindowForAPI
+            global WindowForTaskInformation
+            global TaskJobCheckWorker
+            global JobManager
+
+            from user_config import UserConfig, WindowForDependency, WindowForToolGlobalEnvEditor, WindowForAPI, WindowForTaskInformation, TaskJobCheckWorker
+            from job_manager import JobManager
+
             # IFP input parameters
             self.read_mode = read
             self.debug = debug
