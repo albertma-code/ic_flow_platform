@@ -40,12 +40,12 @@ import parse_config
 
 # Import common python files.
 sys.path.append(str(os.environ['IFP_INSTALL_PATH']) + '/common')
+sys.path.append(str(os.environ['IFP_INSTALL_PATH']) + '/config')
 import common
 import common_db
 import common_pyqt5
 
 # Import install config settings.
-sys.path.append(str(os.environ['IFP_INSTALL_PATH']) + '/config')
 import config as install_config
 
 QT_DEVICE_PIXEL_RATIO = 1
