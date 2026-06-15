@@ -36,6 +36,12 @@ export IFP_INSTALL_PATH=""" + str(CWD) + """
 # Set LD_LIBRARY_PATH.
 """ + str(ld_library_path_setting) + """
 
+# Set writable Python/Matplotlib cache paths for read-only or network Python envs.
+IFP_CACHE_USER="${USER:-$(id -un)}"
+export PYTHONPYCACHEPREFIX="${PYTHONPYCACHEPREFIX:-/tmp/${IFP_CACHE_USER}/ifp_pycache}"
+export MPLCONFIGDIR="${MPLCONFIGDIR:-/tmp/${IFP_CACHE_USER}/ifp_mpl}"
+mkdir -p "$PYTHONPYCACHEPREFIX" "$MPLCONFIGDIR"
+
 # Execute ifp.py.
 python3 $IFP_INSTALL_PATH/""" + str(python_script) + """ \"$@\"
 """)
@@ -71,6 +77,12 @@ export IFP_INSTALL_PATH=""" + str(CWD) + """
 
 # Set LD_LIBRARY_PATH.
 """ + str(ld_library_path_setting) + """
+
+# Set writable Python/Matplotlib cache paths for read-only or network Python envs.
+IFP_CACHE_USER="${USER:-$(id -un)}"
+export PYTHONPYCACHEPREFIX="${PYTHONPYCACHEPREFIX:-/tmp/${IFP_CACHE_USER}/ifp_pycache}"
+export MPLCONFIGDIR="${MPLCONFIGDIR:-/tmp/${IFP_CACHE_USER}/ifp_mpl}"
+mkdir -p "$PYTHONPYCACHEPREFIX" "$MPLCONFIGDIR"
 
 # Execute ifp.py.
 python3 $IFP_INSTALL_PATH/""" + str(python_script) + """ \"$@\"
