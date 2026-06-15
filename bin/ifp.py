@@ -12,7 +12,10 @@ import stat
 import threading
 import time
 import traceback
+import warnings
 from pathlib import Path
+
+warnings.filterwarnings("ignore", message=r".*sipPyTypeDict.*", category=DeprecationWarning)
 
 import jinja2
 import shutil
