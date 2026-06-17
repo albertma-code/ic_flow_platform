@@ -1,27 +1,19 @@
-import datetime
 import os
-import re
-import shlex
 import sys
 import threading
 import time
 import subprocess
 import traceback
 from concurrent.futures import ThreadPoolExecutor
-import getpass
 from typing import Union
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 os.environ['PYTHONUNBUFFERED'] = '1'
-sys.path.append(str(os.environ['IFP_INSTALL_PATH']))
-from config import config
-
 sys.path.append(str(os.environ['IFP_INSTALL_PATH']) + '/common')
 import common
 import common_db
-import common_prediction
 
 log_file = os.environ.get('IFP_LOG_FILE', None)
 
@@ -47,8 +39,6 @@ class JobDispatcher:
         self.thread = threading.Thread(target=self.dispatch_loop, daemon=True)
         # self.dispatch_lock = threading.Lock()
         self.executor = ThreadPoolExecutor(max_workers=max_workers)
-        self.predict = True if hasattr(config, 'mem_prediction') and config.mem_prediction else False
-        self.predictor = LSFPrediction()
         self.log_dir = os.path.join(os.path.dirname(log_file), 'job_logs')
         os.makedirs(self.log_dir, exist_ok=True)
 
@@ -201,9 +191,6 @@ class JobDispatcher:
         Submit LSF job quickly and parse Job ID.
         """
         try:
-            # if self.predict:
-            #     self.predictor.predict(command_file=command) "${LOG_DIR}/${BLOCK}_${VERSION}_${TASK}_${ACTION}.stdout.log"
-
             stdout_file = os.path.join(self.log_dir, '{}_{}_{}_{}.stdout.log'.format(job['block'], job['version'], job['task'], job['action']))
             stderr_file = os.path.join(self.log_dir, '{}_{}_{}_{}.stderr.log'.format(job['block'], job['version'], job['task'], job['action']))
 
@@ -237,89 +224,6 @@ class JobDispatcher:
             logger.error(f'[Dispatcher] LSF submission exception: {str(e)}')
 
         return None
-
-
-class LSFPrediction:
-    def __init__(self):
-        self.predict_model = common_prediction.PredictionModel() if self.predict else None
-
-    def predict(self, command_file: str):
-        try:
-            command = self.read_command(command_file=command_file)
-            job_info = self.get_job_info(command=command)
-            new_command = self.predict_model.predict_job(job_info=job_info, command=command)
-            self.rewrite_command_file(command_file=command_file, new_command=new_command)
-        except Exception as error:
-            logger.error(f'[Dispatcher] LSF Memory Prediction Failed: {str(error)}')
-            logger.debug(f'[Dispatcher] Traceback: {traceback.format_exc()}')
-
-    @staticmethod
-    def rewrite_command_file(command_file: str, new_command: str):
-        with open(command_file, 'r') as f:
-            lines = f.readlines()
-
-        last_line = lines[-1].rstrip('\n')
-
-        match = re.search(r'\bbsub\b.*', last_line)
-        old_bsub_command = match.group().strip()
-        new_line = last_line.replace(old_bsub_command, new_command)
-        lines[-1] = new_line + '\n'
-
-        with open(command_file, 'w') as f:
-            f.writelines(lines)
-
-    @staticmethod
-    def get_job_info(command: str):
-        predict_job_info = {
-            'job_name': '',
-            'project': 'IFP',
-            'user': getpass.getuser(),
-            'queue': '',
-            'cwd': os.getcwd(),
-            'command': command,
-            'started_time': datetime.datetime.now().strftime('%a %b %d %H:%M:%S'),
-            'res_req': ''
-        }
-
-        run_info_list = shlex.split(command)
-
-        for i, item in enumerate(run_info_list):
-            if item == '-q' and not predict_job_info['queue']:
-                predict_job_info['queue'] = run_info_list[i + 1]
-            elif item == '-J' and not predict_job_info['job_name']:
-                predict_job_info['job_name'] = run_info_list[i + 1]
-            elif item == '-R' and not predict_job_info['res_req']:
-                predict_job_info['res_req'] = run_info_list[i + 1]
-
-        return predict_job_info
-
-    @staticmethod
-    def read_command(command_file: str):
-        with open(command_file, 'rb') as f:
-            f.seek(0, 2)
-            file_size = f.tell()
-            block_size = 1024
-            data = b''
-            pos = file_size
-
-            while pos > 0:
-                read_size = min(block_size, pos)
-                pos -= read_size
-                f.seek(pos)
-                data = f.read(read_size) + data
-                if b'\n' in data:
-                    break
-
-            lines = data.split(b'\n')
-            last_line = lines[-1] if lines[-1].strip() else lines[-2]
-            last_line = last_line.decode('utf-8').strip()
-
-            match = re.search(r'\bbsub\b.*', last_line)
-            if match:
-                bsub_command = match.group().strip()
-                return bsub_command
-            else:
-                raise RuntimeError
 
 
 def main():

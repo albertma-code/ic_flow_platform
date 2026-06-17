@@ -7,7 +7,6 @@
 # Description :
 ################################
 import datetime
-import getpass
 import json
 import os
 import random
@@ -17,7 +16,7 @@ import threading
 import time
 import traceback
 import pandas as pd
-from typing import Dict, Tuple
+from typing import Tuple
 
 import requests
 from PyQt5.QtCore import pyqtSignal, QThread, Qt, QTimer, QObject, QEventLoop
@@ -33,7 +32,6 @@ sys.path.append(str(os.environ['IFP_INSTALL_PATH']) + '/common')
 import common
 import common_license
 import common_db
-import common_prediction
 
 sys.path.append(str(os.environ['IFP_INSTALL_PATH']) + '/config')
 import config as install_config
@@ -917,9 +915,7 @@ class TaskObject(QObject):
         self.ignore_fail = False
         self.dependency_traceback_stage = 0
         self.managed = False
-        self.predict = True if hasattr(install_config, 'mem_prediction') and install_config.mem_prediction else False
         self.process_monitor = common.ProcessUsageMonitor(threshold_ratio=0.95)
-        self.predict_model = common_prediction.PredictionModel() if self.predict else None
         self.uuid = common_db.generate_uuid_from_components(item_list=[self.block, self.version, self.flow, self.task])
 
         self.task_obj = self.ifp_obj.config_obj.get_task(self.block,
@@ -1460,11 +1456,7 @@ class TaskObject(QObject):
                 if self.status != common.status.killed:
                     if self.action == common.action.run:
                         try:
-                            if job_type == common_db.JobType.lsf:
-                                save_db_thread = threading.Thread(target=common_db.analysis_and_save_job, args=(self.job_id, self.block, self.version, self.flow, self.task))
-                                save_db_thread.daemon = True
-                                save_db_thread.start()
-                            else:
+                            if job_type == common_db.JobType.local:
                                 file_path = os.path.join(self.ifp_obj.ifp_cache_dir, f'job_logs/{self.block}_{self.version}_{self.task}_{self.action}.job.json')
 
                                 if os.path.exists(file_path):
@@ -1504,10 +1496,7 @@ class TaskObject(QObject):
                 return True
 
             return False
-
             """
-            # TODO: Memory Prediction
-
                 # Run command
                 if job_type == common_db.JobType.lsf:
                     process = common.spawn_process(command)
@@ -1591,11 +1580,6 @@ class TaskObject(QObject):
                     if return_code == 0:
                         self.status = '{} {}'.format(action, common.status.passed)
                         self.msg_signal.emit({'message': '[%s/%s/%s/%s] %s done' % (self.block, self.version, self.flow, self.task, action), 'color': 'green'})
-
-                        # Save job data to database
-                        save_db_thread = threading.Thread(target=common_db.analysis_and_save_job, args=(self.job_id, self.block, self.version, self.flow, self.task))
-                        save_db_thread.daemon = True
-                        save_db_thread.start()
                     else:
                         self.status = '{} {}'.format(action, common.status.failed)
                         self.msg_signal.emit({'message': '[%s/%s/%s/%s] %s failed: %s "%s"' % (self.block, self.version, self.flow, self.task, action, run_method, run_action['COMMAND']), 'color': 'red'})
@@ -1712,29 +1696,6 @@ class TaskObject(QObject):
             self.msg_signal.emit({
                 'message': str(response),
                 'html': True})
-
-    def update_predict_info(self, run_method: str, cwd: str, command: str) -> Dict[str, str]:
-        predict_job_info = {'job_name': '',
-                            'project': self.ifp_obj.config_obj.PROJECT,
-                            'user': getpass.getuser(),
-                            'queue': '',
-                            'cwd': cwd,
-                            'command': command,
-                            'started_time': datetime.datetime.now().strftime('%a %b %d %H:%M:%S'),
-                            'res_req': ''
-                            }
-
-        run_info_list = run_method.split()
-
-        for i, item in enumerate(run_info_list):
-            if item == '-q' and not predict_job_info['queue']:
-                predict_job_info['queue'] = run_info_list[i + 1]
-            elif item == '-J' and not predict_job_info['job_name']:
-                predict_job_info['job_name'] = run_info_list[i + 1]
-            elif item == '-R' and not predict_job_info['res_req']:
-                predict_job_info['res_req'] = run_info_list[i + 1]
-
-        return predict_job_info
 
     def wait_for_signal(self, timeout_ms=None):
         if self.action is None or self.action == common.action.kill:

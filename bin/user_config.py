@@ -67,7 +67,7 @@ def parsing_blank_setting():
                      'CHECK': {'PATH': {'example': '${DEFAULT_PATH}/syn_dc'},
                                'COMMAND': {'example': '${IFP_INSTALL_PATH}/function/check/syn/synopsys/syn_synopsys.syn_dc.py -b ${BLOCK}'},
                                'RUN_METHOD': {'example': run_method_example},
-                               'VIEWER': {'example': '${IFP_INSTALL_PATH}/function/check/tools/view_checklist_report.py -i'},
+                               'VIEWER': {'example': '<your report viewer command>'},
                                'REPORT_FILE': {'example': 'file_check/file_check.rpt'}
                                },
                      'SUMMARIZE': {'PATH': {'example': '${DEFAULT_PATH}/syn_dc'},
@@ -5399,9 +5399,6 @@ class WindowForTaskJobInfo(QMainWindow):
         self.job_refresh_button.setEnabled(False)
         self.job_state_line = QLineEdit()
         self.job_state_line.setReadOnly(True)
-        self.job_bmonitor_button = QPushButton('Launch LsfMonitor')
-        self.job_bmonitor_button.setIcon(QIcon(str(os.environ['IFP_INSTALL_PATH']) + '/data/pictures/logo/monitor.ico'))
-        self.job_bmonitor_button.clicked.connect(self._open_bmonitor)
         self.job_id_line = QLineEdit()
         self.job_id_line.setReadOnly(True)
         self.job_cmd_line = QTextEdit()
@@ -5537,7 +5534,6 @@ class WindowForTaskJobInfo(QMainWindow):
         self.main_layout.addWidget(self.job_id_line, 1, 1)
         self.main_layout.addWidget(job_state_label, 1, 2)
         self.main_layout.addWidget(self.job_state_line, 1, 3)
-        self.main_layout.addWidget(self.job_bmonitor_button, 1, 5)
         self.main_layout.addWidget(job_sub_time_label, 2, 0)
         self.main_layout.addWidget(self.job_sub_time_line, 2, 1)
         self.main_layout.addWidget(job_run_time_label, 2, 2)
@@ -5558,27 +5554,6 @@ class WindowForTaskJobInfo(QMainWindow):
         self.main_layout.setColumnStretch(3, 4)
         self.main_layout.setColumnStretch(4, 2)
         self.main_layout.setColumnStretch(5, 4)
-
-    def _open_bmonitor(self):
-        """
-        View job information with tool 'lsfMonitor'.
-        """
-        job_id = self.job_id_line.text().strip()
-
-        if not job_id:
-            return
-
-        bmonitor_location = shutil.which('bmonitor')
-        bmonitor = bmonitor_location
-
-        if not bmonitor_location:
-            bmonitor = str(os.environ['IFP_INSTALL_PATH']) + '/tools/lsfMonitor/monitor/bin/bmonitor'
-
-        if os.path.exists(bmonitor):
-            command = str(bmonitor) + ' --disable_license -j ' + str(job_id)
-            self.user_obj.ifp_obj.run_monitor(command, str(job_id))
-        else:
-            QMessageBox.warning(self, 'LSF Monitor Warning', 'Not find "bmonitor" on system.')
 
     @property
     def new_refresh_interval(self) -> str:

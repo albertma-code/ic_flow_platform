@@ -22,7 +22,6 @@ TASK:
       PATH: ${DEFAULT_PATH}/dc
       COMMAND: python3 ${DEMO_PATH}/project_setting/check/syn/synopsys/syn_synopsys.syn_dc.py
         -b ${BLOCK}
-      VIEWER: ${IFP_INSTALL_PATH}/action/check/scripts/view_checklist_report -i
       REPORT_FILE: ${DEFAULT_PATH}/dc/file_check/file_check.rpt
     SUMMARIZE:
       PATH: ${DEFAULT_PATH}/dc
@@ -48,7 +47,6 @@ TASK:
       PATH: ${DEFAULT_PATH}/fm
       COMMAND: python3 ${DEMO_PATH}/project_setting/check/fv/synopsys/fv_synopsys.rtl2gate.py
         -t rtl2gate -b ${BLOCK}
-      VIEWER: ${IFP_INSTALL_PATH}/action/check/scripts/view_checklist_report -i
       REPORT_FILE: ${DEFAULT_PATH}/fm/file_check/file_check.rpt
     RUN_AFTER:
       TASK: syn_dc
@@ -68,7 +66,6 @@ TASK:
       PATH: ${DEFAULT_PATH}
       COMMAND: python3 ${DEMO_PATH}/project_setting/check/fv/synopsys/fv_synopsys.rtl2pg.py
         -t rtl2pg -b ${BLOCK}
-      VIEWER: ${IFP_INSTALL_PATH}/action/check/scripts/view_checklist_report -i
       REPORT_FILE: ${DEFAULT_PATH}/file_check/file_check.rpt
     RUN_AFTER:
       TASK: syn_dc
@@ -92,7 +89,6 @@ TASK:
       PATH: ${DEFAULT_PATH}/pt
       COMMAND: python3 ${DEMO_PATH}/project_setting/check/sta/synopsys/sta_synopsys.presta.py
         -b ${BLOCK}
-      VIEWER: ${IFP_INSTALL_PATH}/action/check/scripts/view_checklist_report -i
       REPORT_FILE: ${DEFAULT_PATH}/pt/file_check/file_check.rpt
     RUN_MODE: ${STA_RUN}
     RUN_AFTER:

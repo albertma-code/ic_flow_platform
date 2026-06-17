@@ -1,14 +1,9 @@
-import datetime
 import enum
 import os
-import re
 import sys
-import time
 import uuid
-from hashlib import sha1
-from typing import Tuple, Dict, Union, List, Any
+from typing import Dict, List, Any
 
-from dateutil import parser
 from sqlalchemy import create_engine, Column, Integer, String, Enum
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker, declarative_base
@@ -17,11 +12,9 @@ import warnings
 from sqlalchemy.exc import SAWarning
 warnings.filterwarnings("ignore", category=SAWarning)
 
-sys.path.append(str(os.environ['IFP_INSTALL_PATH']) + 'config/')
+sys.path.append(os.path.join(str(os.environ['IFP_INSTALL_PATH']), 'config'))
 import config
 
-sys.path.append(str(os.environ['IFP_INSTALL_PATH']) + 'common/')
-import common_lsf
 import common
 
 Base = declarative_base()
@@ -87,25 +80,6 @@ class SqlDB:
         result = session.query(model_class).all()
         session.close()
         return result
-
-
-class JobTemplate(Base):
-    __abstract__ = True
-    id = Column(String, primary_key=True)
-    job_id = Column(Integer)
-    job_name = Column(String)
-    user = Column(String)
-    command = Column(String)
-    cwd = Column(String)
-    project = Column(String)
-    queue = Column(String)
-    block = Column(String)
-    version = Column(String)
-    flow = Column(String)
-    task = Column(String)
-    rusage_mem = Column(Integer)  # Unit: MB
-    max_mem = Column(Integer)  # Unit: MB
-    start_time = Column(Integer)  # Timestamp
 
 
 class IFPRecord(Base):
@@ -240,98 +214,6 @@ def save_job_store_batch(data_list: List[Dict[str, Any]], db_path: str):
     if new_records:
         session.bulk_save_objects(new_records)
 
-    session.commit()
-    session.close()
-
-
-def create_weekly_job_table(year: int, week_number: int):
-    table_name = f'job_{str(year)}_{str(week_number)}'.lower()
-    class_name = f'Job_{str(year)}_{str(week_number)}'
-
-    if class_name in globals():
-        return globals()[class_name]
-
-    new_class = type(class_name, (JobTemplate,), {
-        '__tablename__': table_name,
-        '__module__': __name__
-    })
-
-    globals()[class_name] = new_class
-    return new_class
-
-
-def analysis_and_save_job(job_id: str, block: str, version: str, flow: str, task: str):
-    time.sleep(10)
-    job_id = str(job_id)
-
-    if my_match := re.match(r'^b:(\d+)$', job_id):
-        lsf_job_id = int(my_match.group(1))
-
-        try:
-            job_data, year, week_number = analysis_db(job_id=lsf_job_id, block=block, version=version, flow=flow, task=task)
-            save_job(job_data=job_data, year=year, week_number=week_number)
-        except Exception:
-            return
-
-
-def analysis_db(job_id: int, block: str, version: str, flow: str, task: str) -> Tuple[Dict[str, Union[str, int]], int, int]:
-    job_origin_data = common_lsf.get_lsf_bjobs_uf_info('bjobs {} -UF'.format(str(job_id))).get(str(job_id), {})
-    job_data = {}
-
-    if not job_origin_data or job_origin_data['status'] != 'DONE':
-        raise RuntimeError
-
-    job_data['job_id'] = int(job_origin_data['job_id'])
-    job_data['job_name'] = job_origin_data['job_name'] if job_origin_data['job_name'] else 'default'
-    job_data['user'] = job_origin_data['user']
-    job_data['command'] = job_origin_data['command']
-    job_data['project'] = job_origin_data['project']
-    job_data['queue'] = job_origin_data['queue']
-    job_data['cwd'] = job_origin_data['cwd']
-    job_data['start_time'] = int(parser.parse(job_origin_data['started_time']).timestamp())
-    job_data['max_mem'] = int(job_origin_data['max_mem'])
-    job_data['rusage_mem'] = int(job_origin_data['rusage_mem'])
-    job_data['block'] = block
-    job_data['version'] = version
-    job_data['flow'] = flow
-    job_data['task'] = task
-
-    id_str = '-'.join([str(job_id), block, version, flow, task])
-    sha1obj = sha1()
-    sha1obj.update(id_str.encode('utf-8'))
-    job_data['id'] = sha1obj.hexdigest()
-
-    current_time = datetime.datetime.now()
-    year = current_time.year
-    week_number = current_time.isocalendar()[1]
-
-    return job_data, year, week_number
-
-
-def save_job(job_data: Dict[str, Union[str, int]], year: int, week_number: int):
-    """
-    Save job data to job database
-    """
-    if not hasattr(config, 'mem_prediction') or not config.mem_prediction:
-        return
-
-    if hasattr(config, 'db_path') and os.path.exists(config.db_path):
-        db_path = config.db_path
-    else:
-        db_path = os.path.join(os.getcwd(), '.ifp/ifp_db')
-        os.makedirs(os.path.dirname(db_path), exist_ok=True)
-        db_path = f'sqlite:///{db_path}'
-
-    engine = create_engine(db_path, connect_args={'check_same_thread': False})
-    Session = sessionmaker(bind=engine)
-    session = Session()
-
-    weekly_job_table = create_weekly_job_table(year, week_number)
-    Base.metadata.create_all(engine)
-
-    new_job = weekly_job_table(**job_data)
-
-    session.add(new_job)
     session.commit()
     session.close()
 

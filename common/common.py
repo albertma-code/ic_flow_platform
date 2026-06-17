@@ -506,7 +506,7 @@ def run_command_for_api(command, msg_signal, path, info_signal=None, finish_sign
         for line in stderr.splitlines():
             line = line.strip()
 
-            if line.startswith('memoryPrediction') or line.startswith('<<Waiting') or line.startswith('<<Starting'):
+            if line.startswith('<<Waiting') or line.startswith('<<Starting'):
                 continue
 
             if line:
@@ -1255,7 +1255,6 @@ class ConfigSetting:
             'default_yaml_administrators': {'value': '', 'note': 'Only default_yaml_administrators can edit default.yaml on ifp GUI directory.'},
             'system_log_path': {'value': '', 'note': 'system log'},
             'lmstat_path': {'value': '', 'note': 'Specify lmstat path, example "/eda/synopsys/scl/2021.03/linux64/bin/lmstat".'},
-            'mem_prediction': {'value': False, 'note': "Enable/Disable Memory Prediction Feature"},
             'in_process_check_server': {'value': '', 'note': "service host for Task in process check."}
         }
         self.user_setting_dic = {

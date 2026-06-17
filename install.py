@@ -1,54 +1,12 @@
 import os
 import sys
 import stat
-import subprocess
 
 os.environ['PYTHONUNBUFFERED'] = '1'
 CWD = os.getcwd()
 
 sys.path.append(str(CWD) + '/common')
 import common
-
-
-def gen_wrapper_script(wrapper_script):
-    """
-    Generate wrapper script (shell) for python script.
-    """
-    print('>>> Generate wrapper script "' + str(wrapper_script) + '" ...')
-
-    try:
-        python_path = os.path.dirname(os.path.abspath(sys.executable))
-        python_script = str(wrapper_script) + '.py'
-        ld_library_path_setting = ''
-
-        if 'LD_LIBRARY_PATH' in os.environ:
-            ld_library_path_setting = 'export LD_LIBRARY_PATH=' + str(os.environ['LD_LIBRARY_PATH'])
-
-        with open(wrapper_script, 'w') as TS:
-            TS.write("""#!/bin/bash
-
-# Set python3 path.
-export PATH=""" + str(python_path) + """:$PATH
-
-# Set install path.
-export IFP_INSTALL_PATH=""" + str(CWD) + """
-
-# Set LD_LIBRARY_PATH.
-""" + str(ld_library_path_setting) + """
-
-# Set writable Python/Matplotlib cache paths for read-only or network Python envs.
-export PYTHONPYCACHEPREFIX="${PYTHONPYCACHEPREFIX:-/tmp/$USER/pycache}"
-export MPLCONFIGDIR="${MPLCONFIGDIR:-/tmp/$USER/mplconfig}"
-mkdir -p "$PYTHONPYCACHEPREFIX" "$MPLCONFIGDIR"
-
-# Execute ifp.py.
-python3 $IFP_INSTALL_PATH/""" + str(python_script) + """ \"$@\"
-""")
-
-        os.chmod(wrapper_script, stat.S_IRWXU+stat.S_IRWXG+stat.S_IRWXO)
-    except Exception as err:
-        print('*Error*: Failed on generating top script "' + str(wrapper_script) + '": ' + str(err))
-        sys.exit(1)
 
 
 def gen_ifp_script(wrapper_script):
@@ -93,14 +51,6 @@ python3 $IFP_INSTALL_PATH/""" + str(python_script) + """ \"$@\"
 
 
 def gen_wrapper_scripts():
-    script_list = ['action/check/scripts/gen_checklist_scripts',
-                   'action/check/scripts/gen_checklist_summary',
-                   'action/check/scripts/ic_check',
-                   'action/check/scripts/view_checklist_report']
-
-    for wrapper_script in script_list:
-        gen_wrapper_script(wrapper_script)
-
     gen_ifp_script('bin/ifp')
 
 
@@ -178,9 +128,6 @@ def gen_top_sh_env():
 
 ###################################
 
-# Set lsfMonitor path.
-export PATH=""" + str(CWD) + """/tools/lsfMonitor/monitor/bin:$PATH
-
 # Set default soffice path.
 
 
@@ -223,49 +170,12 @@ def gen_top_csh_env():
 
 ###################################
 
-# Set lsfMonitor path.
-setenv PATH """ + str(CWD) + """/tools/lsfMonitor/monitor/bin:$PATH
-
 # Set default soffice path.
 
 
 """)
     except Exception as err:
         print('*Error*: Failed on generating top envionment file "' + str(top_env_file) + '": ' + str(err))
-        sys.exit(1)
-
-
-def update_tools():
-    """
-    Update string "EXPECTED_PYTHON" and "IFP_INSTALL_PATH" on specified tools.
-    """
-    print('>>> Update EXPECTED_PYTHON/IFP_INSTALL_PATH settings for specified tools ...')
-
-    expectedPython = os.path.abspath(sys.executable)
-    toolList = [str(CWD) + '/action/check/scripts/gen_checklist_scripts.py',
-                str(CWD) + '/action/check/scripts/gen_checklist_summary.py',
-                str(CWD) + '/action/check/scripts/ic_check.py',
-                str(CWD) + '/action/check/scripts/view_checklist_report.py']
-
-    for tool in toolList:
-        with open(tool, 'r+') as TOOL:
-            lines = TOOL.read()
-            TOOL.seek(0)
-            lines = lines.replace('<EXPECTED_PYTHON>', expectedPython)
-            lines = lines.replace('<IFP_INSTALL_PATH>', CWD)
-            TOOL.write(lines)
-
-
-def install_tools():
-    print('>>> Install tool "lsfMonitor" ...')
-
-    command = 'cd tools/lsfMonitor; ' + str(sys.executable) + ' install.py'
-    SP = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    (stdout, stderr) = SP.communicate()
-    return_code = SP.returncode
-
-    if return_code != 0:
-        print('*Error*: Failed on installing tool "lsfMonitor": ' + str(stdout, 'utf-8'))
         sys.exit(1)
 
 
@@ -277,8 +187,6 @@ def main():
     gen_config_file()
     gen_top_sh_env()
     gen_top_csh_env()
-    update_tools()
-    install_tools()
 
     print('')
     print('Install successfully!')

@@ -675,14 +675,6 @@ class MainWindow(QMainWindow):
         self.control_menu.addAction(control_summary_action)
         self.control_menu.addAction(control_release_action)
 
-        # Tool
-        lsf_monitor_action = QAction('LSF monitor', self)
-        lsf_monitor_action.setIcon(QIcon(str(os.environ['IFP_INSTALL_PATH']) + '/data/pictures/office/chart.png'))
-        lsf_monitor_action.triggered.connect(self.show_lsf_monitor)
-
-        tool_menu = menubar.addMenu('Tool')
-        tool_menu.addAction(lsf_monitor_action)
-
         # Help
         about_action = QAction('&About', self)
         about_action.setShortcut('Ctrl+A')
@@ -1564,19 +1556,6 @@ Copyright © 2021 ByteDance. All Rights Reserved worldwide.""")
         self.gui_height -= 30
         self.resize(self.gui_width, self.gui_height)
 
-    def show_lsf_monitor(self):
-        self.update_message_text({'message': 'Show LSF/Openlava information with tool "bmonitor".', 'color': 'black'})
-
-        bmonitor = shutil.which('bmonitor')
-
-        if not bmonitor:
-            bmonitor = str(os.environ['IFP_INSTALL_PATH']) + '/tools/lsfMonitor/monitor/bin/bmonitor'
-
-        if os.path.exists(bmonitor):
-            self.run_monitor(bmonitor, 'default')
-        else:
-            QMessageBox.warning(self, 'LSF Monitor Warning', 'Not find "bmonitor" on system.')
-
     # Toolbar function (end)
 
     # config_tab (start) #
@@ -2214,21 +2193,9 @@ Copyright © 2021 ByteDance. All Rights Reserved worldwide.""")
 
     def view_job_info(self, jobid):
         """
-        View job information with tool 'lsfMonitor'.
+        View job information for an external LSF job.
         """
-        self.update_message_text({'message': 'Show job information for jobid "' + str(jobid) + '".', 'color': 'black'})
-
-        bmonitor_location = shutil.which('bmonitor')
-        bmonitor = bmonitor_location
-
-        if not bmonitor_location:
-            bmonitor = str(os.environ['IFP_INSTALL_PATH']) + '/tools/lsfMonitor/monitor/bin/bmonitor'
-
-        if os.path.exists(bmonitor):
-            command = str(bmonitor) + ' --disable_license -j ' + str(jobid)
-            self.run_monitor(command, str(jobid))
-        else:
-            QMessageBox.warning(self, 'LSF Monitor Warning', 'Not find "bmonitor" on system.')
+        QMessageBox.information(self, 'Job Information', 'External LSF job monitor has been removed.\nJob ID: ' + str(jobid))
 
     def pop_check(self, item):
         self.execute_action(common.action.check_view, task_dic_list=[item, ])
