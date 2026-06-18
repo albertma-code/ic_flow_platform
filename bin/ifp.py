@@ -401,8 +401,10 @@ class MainWindow(QMainWindow):
             else:
                 self.show()
 
-            if self.first_time_for_ifp or self.config_dic['PROJECT'] == 'demo':
-                self.guide_window.show()
+            # Auto-popup of the guidance window on first run / demo project was
+            # intrusive — users hit it every startup whenever they launched in
+            # a fresh directory or with the demo config. The Help → Guidance
+            # menu item still opens it on demand.
 
             if top_tab_index == 0:
                 self.top_tab.setCurrentIndex(0)
