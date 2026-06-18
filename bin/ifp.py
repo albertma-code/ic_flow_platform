@@ -1367,7 +1367,7 @@ Copyright © 2021 ByteDance. All Rights Reserved worldwide.""")
 
         if os.path.getsize(self.ifp_config_file) == 0:
             self.config_tab.setCurrentIndex(0)
-            self.guide_window.show()
+            # Auto-popup of the guidance window suppressed; opens via Help > Guidance.
 
     def load(self, config_file='', api_reload: bool = True):
         if not config_file:
@@ -1616,7 +1616,7 @@ Copyright © 2021 ByteDance. All Rights Reserved worldwide.""")
 
         if os.path.getsize(self.ifp_config_file) == 0:
             self.config_tab.setCurrentIndex(0)
-            self.guide_window.show()
+            # Auto-popup of the guidance window suppressed; opens via Help > Guidance.
         else:
             self.config_tab.setCurrentIndex(1)
 
