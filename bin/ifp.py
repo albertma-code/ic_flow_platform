@@ -4956,6 +4956,15 @@ def main():
         QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
 
         app = QApplication(sys.argv)
+
+        # The UI is designed against Qt's Fusion style (the Linux default). On
+        # macOS, Qt defaults to the native "macintosh" style, which renders
+        # buttons/tabs/tables noticeably differently and breaks layouts that
+        # assume Fusion metrics. Force Fusion on macOS so the look matches
+        # Linux; leave Linux/Windows on whatever the platform default is.
+        if sys.platform == 'darwin':
+            app.setStyle('Fusion')
+
         launch_status = None
 
         if not read:
