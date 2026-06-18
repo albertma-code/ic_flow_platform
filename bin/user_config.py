@@ -3126,10 +3126,19 @@ class WindowForDependency(QMainWindow):
 
         dot.graph_attr['dpi'] = '300'
         dot.graph_attr['size'] = '10, 10'
-        dot.render(os.path.join(self.picture_dir, 'full_dependency'), format='png')
-        dot.graph_attr['dpi'] = '96'
-        dot.graph_attr['size'] = '%s, %s' % (str(width), str(height))
-        dot.render(os.path.join(self.picture_dir, 'dependency'), format='png')
+        try:
+            dot.render(os.path.join(self.picture_dir, 'full_dependency'), format='png')
+            dot.graph_attr['dpi'] = '96'
+            dot.graph_attr['size'] = '%s, %s' % (str(width), str(height))
+            dot.render(os.path.join(self.picture_dir, 'dependency'), format='png')
+        except graphviz.backend.execute.ExecutableNotFound as error:
+            # Graphviz "dot" binary not on PATH — dependency chart cannot be rendered.
+            # The chart is an auxiliary visualization; do not let its absence block GUI startup.
+            sys.stderr.write('*Warning*: ' + str(error) + ' Dependency chart will not be displayed. '
+                             'Install graphviz (e.g. "dnf install graphviz" on Rocky/RHEL, '
+                             '"brew install graphviz" on macOS) to enable it.\n')
+            sys.stderr.flush()
+            return
 
         self.gen_chart_frame(image_path=os.path.join(self.picture_dir, r'dependency.png'), full_image_path=os.path.join(self.picture_dir, 'full_dependency.png'))
 
